@@ -1,0 +1,67 @@
+version: '2'
+services:
+    mysqldev:
+        image: mysql:5.6
+        restart: always
+        volumes:
+            - ./dev-mysql:/var/lib/mysql
+        environment:
+            MYSQL_ROOT_PASSWORD: password
+        networks:
+            - dev
+    phpmyadmin:
+        depends_on:
+            - mysqldev
+        image: phpmyadmin/phpmyadmin:4.6
+        restart: always
+        ports:
+            - 8080:80
+        environment:
+            PMA_HOST: mysqldev
+            MYSQL_ROOT_PASSWORD: password
+        networks:
+            - dev
+    wp1:
+        build:
+            context: ./
+            dockerfile: ./Dockerfile.wp1.dev
+        depends_on:
+            - mysqldev
+        volumes:
+            - ./wp1:/var/www/html
+        environment:
+            ENV_WP_NAME: wp1
+        ports:
+            - 8001:80
+        networks:
+            - dev
+    wp2:
+        build:
+            context: ./
+            dockerfile: ./Dockerfile.wp2.dev
+        depends_on:
+            - mysqldev
+        volumes:
+            - ./wp2:/var/www/html
+        environment:
+            ENV_WP_NAME: wp2
+        ports:
+            - 8002:80
+        networks:
+            - dev
+    nginx_router:
+        build:
+            context: ./
+            dockerfile: ./Dockerfile.nginx.dev
+        restart: always
+        volumes:
+            - ./nginx/www:/usr/share/nginx/html
+        links:
+            - wp1:wp1
+            - wp2:wp2
+        ports:
+            - 80:80
+        networks:
+            - dev
+networks:
+    dev:
